@@ -85,7 +85,7 @@ def train(train_dataloader, val_dataloader, model, loss_func, optimizer, epochs)
                         "epoch": epoch, 
                         "step": iter + epoch * len(train_dataloader)})
 
-        avg_loss = running_loss / len(train_dataloader.dataset) * batch_size
+        avg_loss = running_loss / len(train_dataloader)
         losses.append(avg_loss)
         # tqdm.write(f'----\nEpoch [{epoch+1}/{epochs}], Average Loss: {avg_loss:.4f}\n')
         
@@ -114,8 +114,7 @@ def train(train_dataloader, val_dataloader, model, loss_func, optimizer, epochs)
             recon_numpy = reconstructed.cpu().detach().numpy().squeeze()
             wandb.log({
                 "original": wandb.Image(orig_numpy), 
-                "reconstructed": wandb.Image(recon_numpy)}, 
-                step=epoch)
+                "reconstructed": wandb.Image(recon_numpy)})
 
     return losses, val_losses
 
