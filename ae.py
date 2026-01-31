@@ -1,3 +1,5 @@
+import torch
+
 from torchvision.datasets.utils import zipfile
 from collections import OrderedDict
 from torch.nn import Conv2d as Conv2d

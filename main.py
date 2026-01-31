@@ -2,7 +2,7 @@ import torch
 from torchvision import datasets
 from torchvision import transforms
 import matplotlib.pyplot as plt
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from torch.utils.data import DataLoader, random_split
@@ -71,8 +71,8 @@ def train(train_dataloader, val_dataloader, model, loss_func, optimizer, epochs)
 
         for iter, (images, labels) in enumerate(batch_progress):
             batch_size = images.shape[0]
-            # we don't need to flatten here but the starter code does it
-            images = images.reshape(batch_size, -1).to(device)
+            # images = images.reshape(batch_size, -1).to(device)
+            images = images.to(device)
             loss = loss_func(model, images)
 
             optimizer.zero_grad()
@@ -85,7 +85,7 @@ def train(train_dataloader, val_dataloader, model, loss_func, optimizer, epochs)
                         "epoch": epoch, 
                         "step": iter + epoch * len(train_dataloader)})
 
-        avg_loss = running_loss / len(train_dataloader.dataset)
+        avg_loss = running_loss / len(train_dataloader.dataset) * batch_size
         losses.append(avg_loss)
         # tqdm.write(f'----\nEpoch [{epoch+1}/{epochs}], Average Loss: {avg_loss:.4f}\n')
         
@@ -96,71 +96,75 @@ def train(train_dataloader, val_dataloader, model, loss_func, optimizer, epochs)
         with torch.no_grad():  
             for iter, (images, labels) in enumerate(batch_progress):
                 batch_size = images.shape[0]
-                images = images.reshape(batch_size, -1).to(device)
+                # images = images.reshape(batch_size, -1).to(device)
+                images = images.to(device)
                 loss = loss_func(model, images)
                 val_loss += loss.item() 
                 
-        avg_val_loss = val_loss / len(val_dataloader) * batch_size
+        avg_val_loss = val_loss / len(val_dataloader)
         val_losses.append(avg_val_loss)
 
         wandb.log({"val_loss": avg_val_loss, "epoch": epoch})
         tqdm.write(f'----\nEpoch [{epoch+1}/{epochs}], Train Loss: {avg_loss:.4f}, Val Loss: {avg_val_loss:.4f}\n')
         
         if epoch % 5 == 0:
-            original = images[0].view(28,28)
-            reconstructed = model(images[0].unsqueeze(0))['imgs'].squeeze()
-            wandb.log({"original": wandb.Image(original), 
-                        "reconstructed": wandb.Image(reconstructed)}, 
-                        step=epoch)
+            original = images[0]
+            reconstructed = model(images[0].unsqueeze(0))['imgs']
+            orig_numpy = original.cpu().detach().numpy().squeeze()
+            recon_numpy = reconstructed.cpu().detach().numpy().squeeze()
+            wandb.log({
+                "original": wandb.Image(orig_numpy), 
+                "reconstructed": wandb.Image(recon_numpy)}, 
+                step=epoch)
 
     return losses, val_losses
 
 # eval functions
-def plot_latent_images(model, n, digit_size=28):
-    grid_x = np.linspace(-2, 2, n)
-    grid_y = np.linspace(-2, 2, n)
+# def plot_latent_images(model, n, digit_size=28):
+#     grid_x = np.linspace(-2, 2, n)
+#     grid_y = np.linspace(-2, 2, n)
 
-    image_width = digit_size * n
-    image_height = digit_size * n
-    image = np.zeros((image_height, image_width))
+#     image_width = digit_size * n
+#     image_height = digit_size * n
+#     image = np.zeros((image_height, image_width))
 
-    for i, yi in enumerate(grid_x):
-        for j, xi in enumerate(grid_y):
-            z = torch.tensor([[xi, yi]], dtype=torch.float32).to(device)
-            with torch.no_grad():
-                x_decoded = model.decode(z)
-            digit = x_decoded.view(digit_size, digit_size).cpu().numpy()
-            image[i * digit_size: (i + 1) * digit_size,
-                  j * digit_size: (j + 1) * digit_size] = digit
+#     for i, yi in enumerate(grid_x):
+#         for j, xi in enumerate(grid_y):
+#             z = torch.tensor([[xi, yi]], dtype=torch.float32).to(device)
+#             with torch.no_grad():
+#                 x_decoded = model.decode(z)
+#             digit = x_decoded.view(digit_size, digit_size).cpu().numpy()
+#             image[i * digit_size: (i + 1) * digit_size,
+#                   j * digit_size: (j + 1) * digit_size] = digit
 
-    plt.figure(figsize=(10, 10))
-    plt.imshow(image, cmap='Greys_r')
-    plt.axis('Off')
-    plt.show()
+#     plt.figure(figsize=(10, 10))
+#     plt.imshow(image, cmap='Greys_r')
+#     plt.axis('Off')
+#     plt.show()
 
 
-def eval(model):
-    original_imgs = torch.cat([MNIST_test[i][0] for i in range(5)])
-    with torch.no_grad():
-      res = model(original_imgs.reshape(5, -1).to(device))
-      reconstructed_imgs = res['imgs']
-      reconstructed_imgs = reconstructed_imgs.cpu().reshape(*original_imgs.shape)
+# def eval(model):
+#     original_imgs = torch.cat([MNIST_test[i][0] for i in range(5)])
+#     with torch.no_grad():
+#       res = model(original_imgs.reshape(5, -1).to(device))
+#       reconstructed_imgs = res['imgs']
+#       reconstructed_imgs = reconstructed_imgs.cpu().reshape(*original_imgs.shape)
 
-    fig, axes = plt.subplots(5, 2, figsize=(10, 25))
+#     fig, axes = plt.subplots(5, 2, figsize=(10, 25))
 
-    for i in range(5):
-        original_image = original_imgs[i].reshape(28, 28)
-        axes[i, 0].imshow(original_image, cmap='gray')
-        axes[i, 0].set_title(f'Original Image {i+1}')
-        axes[i, 0].axis('off')
+#     for i in range(5):
+#         original_image = original_imgs[i].reshape(28, 28)
+#         axes[i, 0].imshow(original_image, cmap='gray')
+#         axes[i, 0].set_title(f'Original Image {i+1}')
+#         axes[i, 0].axis('off')
 
-        reconstructed_image = reconstructed_imgs[i].reshape(28, 28)
-        axes[i, 1].imshow(reconstructed_image, cmap='gray')
-        axes[i, 1].set_title(f'Reconstructed Image {i+1}')
-        axes[i, 1].axis('off')
+#         reconstructed_image = reconstructed_imgs[i].reshape(28, 28)
+#         axes[i, 1].imshow(reconstructed_image, cmap='gray')
+#         axes[i, 1].set_title(f'Reconstructed Image {i+1}')
+#         axes[i, 1].axis('off')
 
-    plt.tight_layout()
-    plt.show()
+#     plt.tight_layout()
+#     plt.show()
 
 # train
 from ae import AE
@@ -191,11 +195,10 @@ optimizer_ae = torch.optim.Adam(ae.parameters(),
                                 lr = 1e-3,
                                 weight_decay = 1e-8)
 
-epochs = 1
+epochs = 20
 #---------------------
 
-log_ae = train(MNIST_loader, ae, loss_AE, optimizer_ae, epochs)
+log_ae = train(MNIST_train_loader,MNIST_val_loader, ae, loss_AE, optimizer_ae, epochs)
 
-# eval
-eval(ae)
-plot_latent_images(ae, n=8)
+
+torch.save(ae.state_dict(), "ae_model.pth")

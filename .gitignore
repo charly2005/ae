@@ -6,3 +6,4 @@ MNIST/
 .env
 venv/
 wandb/
+.pth
