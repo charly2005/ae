@@ -103,14 +103,19 @@ wandb: Find logs at: wandb/run-20260131_175810-9qnal8k9/logs
 ```
 
 Results:
+
 Original image:
-<img src="assets/original.png" width="500" alt"">
+
+<img src="assets/original.png" width="100" alt="">
 
 First epoch attempt:
-<img src="assets/reconstructed1.png" width="500" alt="">
+
+<img src="assets/reconstructed1.png" width="100" alt="">
 
 Last epoch attempt: 
-<img src="assets/reconstructed20.png" width="500" alt="">
+
+<img src="assets/reconstructed20.png" width="100" alt="">
 
 Training & Validation Graph:
-<img src="assets/assets.png" width="500" alt="">
+
+<img src="assets/tv.png" width="200" alt="">
