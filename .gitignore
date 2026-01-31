@@ -7,3 +7,4 @@ MNIST/
 venv/
 wandb/
 .pth
+.DS_Store
